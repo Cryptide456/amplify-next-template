@@ -69,6 +69,28 @@ export default function App() {
     });
   }
 
+  async function handleUpdate() {
+    if (!editTodo) return;
+
+    const trimmed = editContent.trim();
+
+    if (trimmed === "" || trimmed === editTodo.content?.trim()) {
+      setShowUpdateInfo(true);
+      setTimeout(() => setShowUpdateInfo(false), 5000);
+      return;
+    }
+
+    await client.models.Todo.update({
+      id: editTodo.id,
+      content: trimmed,
+    });
+
+    setVisible(false);
+    setEditTodo(null);
+    setShowUpdateSuccess(true);
+    setTimeout(() => setShowUpdateSuccess(false), 3000);
+  }
+
   function deleteTodo(id: string) {
     client.models.Todo.delete({ id })
   }
@@ -88,12 +110,6 @@ export default function App() {
         style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
         rounded
       />
-    </div>
-  );
-
-  const footerContent = (
-    <div>
-        <Button className="w-full" label="Save" severity='success' onClick={() => setVisible(false)} autoFocus />
     </div>
   );
 
@@ -221,28 +237,7 @@ export default function App() {
                     className="w-full"
                     label="Save"
                     severity="success"
-                    onClick={async () => {
-                      if (!editTodo) return;
-
-                      const trimmed = editContent.trim();
-
-                      if (trimmed === "" || trimmed === editTodo.content?.trim()) {
-                        setShowUpdateInfo(true);
-                        setTimeout(() => setShowUpdateInfo(false), 5000);
-                        return;
-                      }
-
-                      await client.models.Todo.update({
-                        id: editTodo.id,
-                        content: trimmed,
-                      });
-
-                      setVisible(false);
-                      setEditTodo(null);
-                      setShowUpdateSuccess(true);
-                      setTimeout(() => setShowUpdateSuccess(false), 3000);
-                    }}
-                    autoFocus
+                    onClick={handleUpdate}
                   />
                 }
                 visible={visible}
@@ -252,6 +247,7 @@ export default function App() {
                 }}
                 style={{ border: 'none', boxShadow: 'none' }}
                 breakpoints={{ '960px': '75vw', '641px': '100vw' }}
+                draggable={false}
               >
                 {showUpdateInfo && (
                   <Message
@@ -271,6 +267,12 @@ export default function App() {
                   type="text"
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault(); // prevent default dialog close when pressing enter
+                      handleUpdate(); // Runs full validation, including the info message
+                    }
+                  }}
                   className="p-inputtext-lg"
                 />
               </Dialog>
